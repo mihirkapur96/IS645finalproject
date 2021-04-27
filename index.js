@@ -45,9 +45,15 @@ const sql_create = `CREATE TABLE IF NOT EXISTS Books (
 
 const app = express();
 
-app.listen (3000, () => {
-    console.log ("Server started (http://localhost:3000/) !");
+// Start listening to incoming requests
+// If process.env.PORT is not defined, port number 3000 is used
+const listener = app.listen(process.env.PORT || 3000, () => {
+  console.log(`Your app is listening on port ${listener.address().port}`);
 });
+
+// app.listen (3000, () => {
+//     console.log ("Server started (http://localhost:3000/) !");
+// });
 
 app.get ("/", (req,res) => {
     res.send ("Hello world...");
