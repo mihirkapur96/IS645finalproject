@@ -1,14 +1,27 @@
-require('dotenv').config()
-
 const express = require("express");
 
+const path = require("path");
 const { Pool } = require('pg');
+require('dotenv').config()
+
+const app = express();
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
+app.use(express.urlencoded({ extended: false })); // <--- middleware configuration
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
+
+console.log("Successful connection to the database");
+
+
+
+
 
 const sql_create = `CREATE TABLE IF NOT EXISTS Books (
     Book_ID SERIAL PRIMARY KEY,
@@ -43,28 +56,13 @@ const sql_create = `CREATE TABLE IF NOT EXISTS Books (
     });
   });
 
-const app = express();
 
-// Start listening to incoming requests
-// If process.env.PORT is not defined, port number 3000 is used
-const listener = app.listen(process.env.PORT || 3000, () => {
-  console.log(`Your app is listening on port ${listener.address().port}`);
+
+  // Start listener
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server started (http://localhost:3000/) !");
 });
-
-// app.listen (3000, () => {
-//     console.log ("Server started (http://localhost:3000/) !");
-// });
-
-app.get ("/", (req,res) => {
-    res.send ("Hello world...");
-});
-
-app.set("view engine", "ejs");
-
-const path = require("path");
-app.set("views", path.join(__dirname, "views"));
-
-app.use(express.static(path.join(__dirname, "public")));
+  
 
 app.get("/", (req, res) => { 
     // res.send("Hello world...");
@@ -74,6 +72,7 @@ app.get("/", (req, res) => {
 app.get("/about", (req, res) => {
     res.render("about");
 });
+
 
 app.get("/data", (req, res) => {
     const test = {
@@ -92,6 +91,22 @@ app.get("/books", (req, res) => {
       res.render("books", { model: result.rows });
     });
   });
+
+  
+// GET /create
+app.get("/create", (req, res) => {
+  res.render("create", { model: {} });
+});
+
+// POST /create
+app.post("/create", (req, res) => {
+  const sql = "INSERT INTO Books (Title, Author, Comments) VALUES ($1, $2, $3)";
+  const book = [req.body.title, req.body.author, req.body.comments];
+  pool.query(sql, book, (err, result) => {
+    // if (err) ...
+    res.redirect("/books");
+  });
+});
 
   // GET /edit/5
 app.get("/edit/:id", (req, res) => {
@@ -114,26 +129,6 @@ app.post("/edit/:id", (req, res) => {
   });
 });
 
-// Server configuration
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.use(express.static("public"));
-app.use(express.urlencoded({ extended: false })); // <--- middleware configuration
-
-// GET /create
-app.get("/create", (req, res) => {
-  res.render("create", { model: {} });
-});
-
-// POST /create
-app.post("/create", (req, res) => {
-  const sql = "INSERT INTO Books (Title, Author, Comments) VALUES ($1, $2, $3)";
-  const book = [req.body.title, req.body.author, req.body.comments];
-  pool.query(sql, book, (err, result) => {
-    // if (err) ...
-    res.redirect("/books");
-  });
-});
 
 // GET /delete/5
 app.get("/delete/:id", (req, res) => {
@@ -154,5 +149,3 @@ app.post("/delete/:id", (req, res) => {
     res.redirect("/books");
   });
 });
-
-
